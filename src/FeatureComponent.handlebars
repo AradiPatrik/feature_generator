@@ -1,0 +1,38 @@
+package {{ base_package }}.{{ to_flat name }}.impl.di
+
+import dagger.BindsInstance
+import dagger.Component
+import io.morfly.streaming.common.di.CommonProvider
+import io.morfly.streaming.common.di.FeatureScoped
+import io.morfly.streaming.data.DataProvider
+import io.morfly.streaming.moviedetails.MovieDetailsProvider
+import io.morfly.streaming.moviedetails.impl.credits.di.CreditsComponent
+import io.morfly.streaming.moviedetails.impl.movie.GetMovie
+import io.morfly.streaming.moviedetails.impl.movie.di.MovieComponent
+
+
+@FeatureScoped
+@Component(
+dependencies = [DataProvider::class, CommonProvider::class],
+modules = [MovieDetailsModule::class, SubcomponentsModule::class]
+)
+interface MovieDetailsComponent : MovieDetailsProvider {
+val getMovie: GetMovie
+
+@get:MovieId
+val movieId: Int
+
+@Component.Factory
+interface Factory {
+
+fun create(
+dataProvider: DataProvider,
+commonProvider: CommonProvider,
+@BindsInstance @MovieId movieId: Int
+): MovieDetailsComponent
+}
+
+val creditsComponentFactory: CreditsComponent.Factory
+
+val moviesComponentFactory: MovieComponent.Factory
+}
