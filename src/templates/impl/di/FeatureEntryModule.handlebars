@@ -1,0 +1,22 @@
+package {{ base_package }}.impl.{{ flat module }}.di
+
+import {{ base_package }}.api.{{ pascal module }}FeatureEntry
+import {{ base_package }}.impl.{{ flat module }}.entry.{{ pascal module }}FeatureEntryImpl
+import {{ base_package }}.navigation.FeatureEntry
+import {{ base_package }}.navigation.FeatureEntryKey
+import dagger.Binds
+import dagger.Module
+import dagger.multibindings.IntoMap
+import javax.inject.Singleton
+
+/**
+ * Binding the navigation entry points into this feature
+ */
+@Module
+interface {{ pascal module }}FeatureEntryModule {
+    @Binds
+    @IntoMap
+    @FeatureEntryKey({{ pascal module }}FeatureEntry::class)
+    @Singleton
+    fun bind{{ pascal module }}Entry(impl: {{ pascal module }}FeatureEntryImpl): FeatureEntry<*>
+}

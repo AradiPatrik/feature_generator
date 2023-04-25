@@ -1,0 +1,42 @@
+package {{ base_package }}.impl.{{ flat module }}.{{ flat first_page }}.screen
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import {{ base_package }}.theme.{{ pascal app }}Theme
+
+@Composable
+fun {{ pascal first_page }}Screen(viewModel: {{ pascal first_page }}ScreenViewModel) {
+    {{ pascal first_page }}Screen()
+}
+
+@Composable
+fun {{ pascal first_page }}Screen() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            Text(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(16.dp),
+                text = "{{ pascal first_page }} Screen",
+                style = MaterialTheme.typography.titleLarge
+            )
+        }
+    }
+}
+
+@Composable
+@Preview(showBackground = true)
+fun {{ pascal first_page }}ScreenPreview() {
+    {{ pascal app }}Theme {
+        {{ pascal first_page }}Screen()
+    }
+}

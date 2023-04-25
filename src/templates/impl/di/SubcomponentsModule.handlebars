@@ -1,0 +1,10 @@
+package {{ base_package }}.impl.{{ flat module }}.di
+
+import {{ base_package }}.impl.{{ flat module }}.{{ flat first_page }}.di.{{ pascal first_page }}Subcomponent
+import dagger.Module
+
+/**
+ * Add subfeature-components here
+ */
+@Module(subcomponents = [{{ pascal first_page }}Subcomponent::class])
+interface {{ pascal module }}SubcomponentsModule

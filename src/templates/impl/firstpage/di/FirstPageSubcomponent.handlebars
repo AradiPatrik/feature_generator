@@ -1,0 +1,21 @@
+package {{ base_package }}.impl.{{ flat module }}.{{ flat first_page }}.di
+
+import {{ base_package }}.impl.{{ flat module }}.{{ flat first_page }}.screen.{{ pascal first_page }}ScreenViewModel
+import {{ base_package }}.navigation.SubfeatureScoped
+import dagger.Subcomponent
+
+/**
+ * The component for the screen inside the feature. It is providing the screen-wide dependencies.
+ * If the sub-feature needs dependencies other than the ones provided in the root component, it
+ * should be added inside the [{{ pascal first_page }}Subcomponent.Factory] as parameter.
+ */
+@SubfeatureScoped
+@Subcomponent(modules = [{{ pascal first_page }}Module::class])
+interface {{ pascal first_page }}Subcomponent {
+    val viewModel: {{ pascal first_page }}ScreenViewModel
+
+    @Subcomponent.Factory
+    interface Factory {
+        fun create(): {{ pascal first_page }}Subcomponent
+    }
+}
