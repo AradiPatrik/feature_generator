@@ -12,7 +12,7 @@ import {{ base_package }}.data.api.DataProvider
 import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
 import {{ base_package }}.{{ flat module }}.impl.di.Dagger{{ pascal module }}Component
 import {{ base_package }}.{{ flat module }}.impl.di.{{ pascal module }}RootComponent
-import {{ base_package }}.{{ flat module }}.impl.{{ first_page }}.screen.{{ pascal first_page }}Screen
+import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen.{{ pascal first_page }}Screen
 import {{ base_package }}.navigation.CompositionLocals
 import {{ base_package }}.navigation.RootComponentHolder
 import {{ base_package }}.navigation.injectedViewModel
@@ -53,7 +53,7 @@ class {{ pascal module }}FeatureEntryImpl @Inject constructor() : {{ pascal modu
         val currentDataProvider = CompositionLocals.current<DataProvider>()
         val currentPlatformProvider = CompositionLocals.current<PlatformProvider>()
         return rememberScoped(rootEntry) {
-            Dagger{{ pascal module }}Component.builder()
+            Dagger{{ pascal module }}RootComponent.builder()
                 .dataProvider(currentDataProvider)
                 .platformProvider(currentPlatformProvider)
                 .build()

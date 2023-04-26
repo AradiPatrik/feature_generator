@@ -1,0 +1,11 @@
+package {{ base_package }}.{{ flat app }}.di
+
+import com.cardinalblue.profile.impl.di.ProfileEntryFeatureModule
+import dagger.Module
+
+@Module(
+    includes = [
+        ProfileEntryFeatureModule::class,
+    ]
+)
+class NavigationEntryModule

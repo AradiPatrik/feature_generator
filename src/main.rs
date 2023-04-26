@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::env;
 use std::fmt::{Debug, format};
-use std::fs::{create_dir_all, File, OpenOptions};
+use std::fs::{create_dir_all, File, OpenOptions, read_to_string, remove_dir};
 use std::io::prelude::*;
 use std::path::Path;
 
@@ -37,7 +37,13 @@ const API_FEATURE_ENTRY: &str = include_str!("templates/api/FeatureEntry.handleb
 const API_FEATURE_PROVIDER: &str = include_str!("templates/api/ApiFeatureProvider.handlebars");
 
 // etc
-const SETTINGS_GRADLE: &str = include_str!("templates/etc/settings.gradle.handlebars");
+const SETTINGS_GRADLE: &str = include_str!("templates/etc/settings.gradle.kts.handlebars");
+const DEPENDENCY_MODULE_EXTENSION: &str = include_str!("templates/etc/dependency-module-extension.handlebars");
+
+// mock
+const MOCK_NAVIGATION_ENTRY_MODULE: &str = include_str!("templates/mock/MockNavigationEntryModule.kt.handlebars");
+const MOCK_BUILD_SRC_MODULES: &str = include_str!("templates/mock/MockBuildSrcModules.kt.handlebars");
+const MOCK_APP_BUILD_GRADLE: &str = include_str!("templates/mock/MockAppBUildGradle.handlebars");
 
 fn main() {
     let mut handlebars = Handlebars::new();
@@ -45,27 +51,28 @@ fn main() {
 
     let context = parse_parameters();
     let module = context.get("module").unwrap();
-    let base_package = context.get("base_package").unwrap().clone();
+    let dotted_base_package = context.get("base_package").unwrap().clone();
     let first_page: &String = context.get("first_page").unwrap();
+    let app_name = context.get("app").unwrap();
     let is_test = context.get("test_option").unwrap().split("=").nth(1).unwrap() == "true";
-    let base_package = base_package.split(".").collect::<Vec<&str>>().join("/");
+    let base_package = dotted_base_package.split(".").collect::<Vec<&str>>().join("/");
     let root = Path::new(if is_test { "./test/" } else { "./" });
     let feature = format!("feature/{}", module.to_case(Case::Kebab));
-    let root = root.join(&feature);
-    let api_root = root.join("api");
-    let impl_root = root.join("impl");
+    let feature_root = root.join(&feature);
+    let api_root = feature_root.join("api");
+    let impl_root = feature_root.join("impl");
 
     let base_api_package = api_root
-        .join("src/java")
+        .join("src/main/java")
         .join(&base_package)
-        .join("api")
-        .join(module.to_case(Case::Flat));
+        .join(module.to_case(Case::Flat))
+        .join("api");
 
     let base_impl_package = impl_root
-        .join("src/java")
+        .join("src/main/java")
         .join(&base_package)
-        .join("impl")
-        .join(module.to_case(Case::Flat));
+        .join(module.to_case(Case::Flat))
+        .join("impl");
 
     create_dir_all(&base_api_package).unwrap();
     create_dir_all(&base_impl_package).unwrap();
@@ -73,16 +80,133 @@ fn main() {
     generate_api_files(&api_root, &base_api_package, &handlebars, &context, &module);
     generate_impl_files(&impl_root, &base_impl_package, &handlebars, &context, module, first_page);
 
+    add_feature_to_settings(&mut handlebars, &context, is_test, root);
+
+    // ===== Amend NavigationEntryModule.kt =====
+    let path = format!("app/src/main/java/{}/{}", base_package, app_name);
+    let app_package = Path::new(&path);
+    let app_package = root.join(app_package);
+    let di_package = app_package.join("di");
+
+    let navigation_entry_module = di_package.join("NavigationEntryModule.kt");
+    if is_test {
+        create_dir_all(navigation_entry_module.parent().unwrap()).unwrap();
+        let mock_file = File::create(&navigation_entry_module).unwrap();
+        handlebars.render_template_to_write(MOCK_NAVIGATION_ENTRY_MODULE, &context, &mock_file).unwrap();
+    }
+
+    let navigation_entry_module_content = read_to_string(&navigation_entry_module).unwrap();
+    let lines: Vec<String> = add_import_and_include_to_navigation_entry_module(module, dotted_base_package, navigation_entry_module_content);
+
+    let mut navigation_entry_module = OpenOptions::new()
+        .create(is_test)
+        .write(true)
+        .truncate(true)
+        .open(navigation_entry_module)
+        .unwrap();
+
+    navigation_entry_module.write(lines.join("\n").as_bytes()).unwrap();
+
+    // ===== Amend buildsrc =====
+
+    let path = format!("buildSrc/src/main/kotlin/");
+    let build_src_root = Path::new(&path);
+    let build_src_root = root.join(build_src_root);
+
+    let build_src_modules = build_src_root.join("modules.kt");
+    if is_test {
+        create_dir_all(build_src_modules.parent().unwrap()).unwrap();
+        let mock_file = File::create(&build_src_modules).unwrap();
+        handlebars.render_template_to_write(MOCK_BUILD_SRC_MODULES, &context, &mock_file).unwrap();
+    }
+
+    let build_src_modules_content = read_to_string(&build_src_modules).unwrap();
+    let lines: Vec<String> = build_src_modules_content.lines()
+        .fold(Vec::new(), |mut acc, line| {
+            let line = line.to_string();
+            acc.push(line.clone());
+            if line.contains("// ===== feature modules =====") {
+                let dependency_extension = handlebars.render_template(DEPENDENCY_MODULE_EXTENSION, &context).unwrap();
+                acc.push(dependency_extension)
+            }
+            acc
+        });
+
+    let mut build_src_modules = OpenOptions::new()
+        .create(is_test)
+        .write(true)
+        .truncate(true)
+        .open(build_src_modules)
+        .unwrap();
+
+    build_src_modules.write(lines.join("\n").as_bytes()).unwrap();
+
+    // Amend app build gradle
+    let app_build_gradle = root.join("app/build.gradle.kts");
+    if is_test {
+        create_dir_all(app_build_gradle.parent().unwrap()).unwrap();
+        let mock_file = File::create(&app_build_gradle).unwrap();
+        handlebars.render_template_to_write(MOCK_APP_BUILD_GRADLE, &context, &mock_file).unwrap();
+    }
+
+    let app_build_gradle_content = read_to_string(&app_build_gradle).unwrap();
+    let lines: Vec<String> = app_build_gradle_content.lines()
+        .fold(Vec::new(), |mut acc, line| {
+            let line = line.to_string();
+            acc.push(line.clone());
+            if line.contains("// ===== feature modules =====") {
+                let dependency_implementation = format!("    implementation(*{}.all())", module.to_case(Case::Camel));
+                acc.push(dependency_implementation)
+            }
+            acc
+        });
+
+    let mut app_build_gradle = OpenOptions::new()
+        .create(is_test)
+        .write(true)
+        .truncate(true)
+        .open(app_build_gradle)
+        .unwrap();
+
+    app_build_gradle.write(lines.join("\n").as_bytes()).unwrap();
+}
+
+fn add_import_and_include_to_navigation_entry_module(module: &String, dotted_base_package: String, navigation_entry_module_content: String) -> Vec<String> {
+    navigation_entry_module_content.lines()
+        .fold(Vec::new(), |mut acc, line| {
+            let line = line.to_string();
+            if line.contains("dagger.Module") {
+                let import_statement = format!(
+                    "import {0}.{1}.impl.di.{2}FeatureEntryModule",
+                    dotted_base_package,
+                    module.to_case(Case::Flat),
+                    module.to_case(Case::Pascal)
+                );
+
+                acc.push(import_statement);
+                acc.push(line);
+            } else if line.contains("    includes = [") {
+                acc.push(line);
+                let module_class = format!("        {0}FeatureEntryModule::class,", module.to_case(Case::Pascal));
+                acc.push(module_class);
+            } else {
+                acc.push(line);
+            }
+            acc
+        })
+}
+
+fn add_feature_to_settings<T: Serialize>(handlebars: &mut Handlebars, context: &T, is_test: bool, root: &Path) {
     let settings_import = handlebars.render_template(SETTINGS_GRADLE, &context).unwrap();
 
     let mut settings_gradle = OpenOptions::new()
+        .create(is_test)
         .write(true)
         .append(true)
-        .open("./settings.gradle.kts.handlebars")
+        .open(root.join("settings.gradle.kts"))
         .unwrap();
 
-
-    if let Err(e) = writeln!(settings_gradle, settings_import) {
+    if let Err(e) = writeln!(settings_gradle, "{}", settings_import) {
         eprintln!("Couldn't write to file: {}", e);
     }
 }

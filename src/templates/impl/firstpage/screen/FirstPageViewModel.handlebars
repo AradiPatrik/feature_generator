@@ -1,13 +1,15 @@
 package {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen
 
 import androidx.lifecycle.ViewModel
-import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.usecase.{{ pascal first_page }}Movies
+import androidx.lifecycle.viewModelScope
+import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.usecase.DoExample
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class {{ pascal first_page }}ScreenViewModel @Inject constructor(
     private val doExample: DoExample,
 ) : ViewModel() {
-    fun onClick() {
+    fun onClick() = viewModelScope.launch {
         doExample("example")
     }
 }
