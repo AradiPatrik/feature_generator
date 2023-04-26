@@ -1,4 +1,4 @@
-package {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen
+package com.cardinalblue.moviesearch.impl.search.screen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,22 +11,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import {{ base_package }}.theme.{{ pascal app }}Theme
+import com.cardinalblue.theme.SkeletonTheme
 
 @Composable
-fun {{ pascal first_page }}Screen(viewModel: {{ pascal first_page }}ScreenViewModel) {
-    {{ pascal first_page }}Screen()
+fun SearchScreen(viewModel: SearchScreenViewModel) {
+    SearchScreen()
 }
 
 @Composable
-fun {{ pascal first_page }}Screen() {
+fun SearchScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             Text(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(16.dp),
-                text = "{{ pascal first_page }} Screen",
+                text = "Search Screen",
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -35,8 +35,8 @@ fun {{ pascal first_page }}Screen() {
 
 @Composable
 @Preview(showBackground = true)
-fun {{ pascal first_page }}ScreenPreview() {
-    {{ pascal app }}Theme {
-        {{ pascal first_page }}Screen()
+fun SearchScreenPreview() {
+    SkeletonTheme {
+        SearchScreen()
     }
 }

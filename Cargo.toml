@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 handlebars = "4.3.6"
 convert_case = "0.6.0"
+serde = "1.0.160"

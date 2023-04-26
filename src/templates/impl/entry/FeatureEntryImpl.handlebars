@@ -1,4 +1,4 @@
-package {{ base_package }}.impl.{{ flat module }}.entry
+package {{ base_package }}.{{ flat module }}.impl.entry
 
 import android.os.Bundle
 import androidx.compose.runtime.Composable
@@ -8,11 +8,11 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import {{ base_package }}.api.DataProvider
-import {{ base_package }}.api.{{ pascal module }}FeatureEntry
-import {{ base_package }}.impl.{{ flat module }}.di.Dagger{{ pascal module }}Component
-import {{ base_package }}.impl.{{ flat module }}.di.{{ pascal module }}RootComponent
-import {{ base_package }}.impl.{{ flat module }}.{{ first_page }}.screen.{{ pascal first_page }}Screen
+import {{ base_package }}.data.api.DataProvider
+import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
+import {{ base_package }}.{{ flat module }}.impl.di.Dagger{{ pascal module }}Component
+import {{ base_package }}.{{ flat module }}.impl.di.{{ pascal module }}RootComponent
+import {{ base_package }}.{{ flat module }}.impl.{{ first_page }}.screen.{{ pascal first_page }}Screen
 import {{ base_package }}.navigation.CompositionLocals
 import {{ base_package }}.navigation.RootComponentHolder
 import {{ base_package }}.navigation.injectedViewModel

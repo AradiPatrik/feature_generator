@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "{{ base_package }}.{{ flat module }}.api"
+    namespace = "com.cardinalblue.moviesearch.api"
     applyCompose()
 }
 

@@ -1,6 +1,6 @@
-package {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.usecase
+package com.cardinalblue.moviesearch.impl.search.usecase
 
-import {{ base_package }}.platform.IoDispatcher
+import com.cardinalblue.platform.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
