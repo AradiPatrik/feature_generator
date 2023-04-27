@@ -4,16 +4,21 @@ import androidx.navigation.NamedNavArgument
 import {{ base_package }}.navigation.EmptyInput
 import {{ base_package }}.navigation.FeatureEntry
 import {{ base_package }}.navigation.NavigationCommand
+import {{ base_package }}.navigation.NavigationCommandProvider
+
 
 /**
  * Define arguments and start destination for the feature.
  */
 abstract class {{ pascal module }}FeatureEntry : FeatureEntry<EmptyInput> {
-    final override val featureRoute: String = "{{ kebab module }}"
-    override val arguments = emptyList<NamedNavArgument>()
+    companion object : NavigationCommandProvider<EmptyInput> {
+        override val featureRoute: String = "{{ kebab module }}"
+        override val arguments = emptyList<NamedNavArgument>()
 
-    final override fun destination(input: EmptyInput) = object : NavigationCommand {
-        override val arguments: List<NamedNavArgument> = this@{{ pascal module }}FeatureEntry.arguments
-        override val destination: String = featureRoute
+        override fun destination(input: EmptyInput) = object : NavigationCommand {
+            override val arguments: List<NamedNavArgument> = this@Companion.arguments
+            override val destinationFeatureRoute: String = featureRoute
+            override val destination: String = featureRoute
+        }
     }
 }
