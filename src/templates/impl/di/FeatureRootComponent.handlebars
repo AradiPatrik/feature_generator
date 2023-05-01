@@ -19,7 +19,10 @@ import dagger.Component
         PlatformProvider::class,
         NavigationProvider::class,
     ],
-    modules = [{{ pascal module }}RootModule::class, {{ pascal module }}SubcomponentsModule::class]
+    modules = [
+        {{ pascal module }}RootModule::class,
+        {{ pascal module }}SubcomponentsModule::class,
+    ]
 )
 interface {{ pascal module }}RootComponent : {{ pascal module }}Provider {
     val {{ camel first_page }}SubcomponentFactory: {{ pascal first_page }}Subcomponent.Factory

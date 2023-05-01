@@ -1,16 +1,15 @@
 use std::collections::BTreeMap;
-use std::env;
-use std::fmt::{Debug, format};
-use std::fs::{create_dir_all, File, OpenOptions, read_to_string, remove_dir};
+use std::fs::{create_dir_all, File, OpenOptions, read_to_string};
 use std::io::prelude::*;
 use std::path::Path;
 
 use convert_case::{Case, Casing};
 use serde::Serialize;
-use handlebars::{Context, Handlebars, Helper, HelperResult, JsonRender, Output, RenderContext};
-use crate::helpers::to_kebab;
+use handlebars::{Handlebars};
+use crate::args_parser::{Cli, Commands};
 
 mod helpers;
+mod args_parser;
 
 // impl/di
 const FEATURE_ENTRY_MODULE: &str = include_str!("templates/impl/di/FeatureEntryModule.handlebars");
@@ -49,12 +48,117 @@ fn main() {
     let mut handlebars = Handlebars::new();
     register_helpers(&mut handlebars);
 
-    let context = parse_parameters();
+    let args = args_parser::parse_args();
+    match args.command {
+        Commands::GenMod { .. } => {
+            gen_mod(&mut handlebars, &args);
+        }
+        Commands::GenScreen { .. } => {
+            gen_screen(&mut handlebars, &args);
+        }
+    }
+}
+
+fn gen_screen(handlebars: &mut Handlebars, args: &Cli) {
+    let context = build_context(&args);
+    let module = context.get("module").unwrap();
+    let page: &String = context.get("first_page").unwrap();
+    let base_package = args.base_package.split(".").collect::<Vec<&str>>().join("/");
+    let root = Path::new(if args.debug { "./test/" } else { "./" });
+    let feature = format!("feature/{}", module.to_case(Case::Kebab));
+    let feature_root = root.join(&feature);
+    let impl_root = feature_root.join("impl");
+
+    let base_impl_package_path = impl_root
+        .join("src/main/java")
+        .join(&base_package)
+        .join(module.to_case(Case::Flat))
+        .join("impl");
+
+    generate_page(&base_impl_package_path, handlebars, &context, page);
+    add_subcomponent_to_component(page, module, &base_impl_package_path, &args.base_package);
+}
+
+fn add_subcomponent_to_component(screen_name: &str, module: &str, base_impl_package_path: &Path, base_package: &str) {
+    // ===== component =====
+    let component_path = base_impl_package_path.join("di").join(format!("{}RootComponent.kt", module.to_case(Case::Pascal)));
+    let mut lines = read_to_string(&component_path).unwrap()
+        .lines()
+        .map(|l| l.to_string())
+        .collect::<Vec<String>>();
+
+    let base_impl_package = format!("{}.{}.impl", base_package, module.to_case(Case::Flat));
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.ends_with("Subcomponent"),
+        &format!("import {}.{}.di.{}Subcomponent", base_impl_package, screen_name.to_case(Case::Flat), screen_name.to_case(Case::Pascal)),
+    );
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.ends_with("Subcomponent.Factory"),
+        &format!("    val {}SubcomponentFactory: {}Subcomponent.Factory", screen_name.to_case(Case::Camel), screen_name.to_case(Case::Pascal)),
+    );
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&component_path)
+        .unwrap();
+
+    file.write(lines.join("\n").as_bytes()).unwrap();
+
+    // ===== SubcomponentsModule ======
+    let subcomponents_module_path = base_impl_package_path.join("di").join(format!("{}SubcomponentsModule.kt", module.to_case(Case::Pascal)));
+    let mut lines = read_to_string(&subcomponents_module_path).unwrap()
+        .lines()
+        .map(|l| l.to_string())
+        .collect::<Vec<String>>();
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.ends_with("Subcomponent"),
+        &format!("import {}.{}.di.{}Subcomponent", base_impl_package, screen_name.to_case(Case::Flat), screen_name.to_case(Case::Pascal)),
+    );
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.ends_with("Subcomponent::class,"),
+        &format!("        {}Subcomponent::class,", screen_name.to_case(Case::Pascal)),
+    );
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&subcomponents_module_path)
+        .unwrap();
+
+    file.write(lines.join("\n").as_bytes()).unwrap();
+}
+
+fn add_line_after_matching_predicate(
+    content: &mut Vec<String>,
+    predicate: &dyn Fn(&str) -> bool,
+    line: &str,
+) {
+    let mut index = 0;
+    for (i, l) in content.iter().enumerate() {
+        if predicate(l) {
+            index = i;
+            break;
+        }
+    }
+    content.insert(index + 1, line.to_string());
+}
+
+fn gen_mod(mut handlebars: &mut Handlebars, args: &Cli) {
+    let context = build_context(&args);
     let module = context.get("module").unwrap();
     let dotted_base_package = context.get("base_package").unwrap().clone();
     let first_page: &String = context.get("first_page").unwrap();
     let app_name = context.get("app").unwrap();
-    let is_test = context.get("test_option").unwrap().split("=").nth(1).unwrap() == "true";
+    let is_test = args.debug;
     let base_package = dotted_base_package.split(".").collect::<Vec<&str>>().join("/");
     let root = Path::new(if is_test { "./test/" } else { "./" });
     let feature = format!("feature/{}", module.to_case(Case::Kebab));
@@ -81,8 +185,12 @@ fn main() {
     generate_impl_files(&impl_root, &base_impl_package, &handlebars, &context, module, first_page);
 
     add_feature_to_settings(&mut handlebars, &context, is_test, root);
+    amend_navigation_entry_module(&mut handlebars, &context, module, dotted_base_package, app_name, is_test, base_package, root);
+    amend_build_src(&mut handlebars, &context, is_test, root);
+    amend_app_build_gradle(&mut handlebars, &context, module, is_test, root);
+}
 
-    // ===== Amend NavigationEntryModule.kt =====
+fn amend_navigation_entry_module(handlebars: &mut Handlebars, context: &BTreeMap<String, String>, module: &String, dotted_base_package: String, app_name: &String, is_test: bool, base_package: String, root: &Path) {
     let path = format!("app/src/main/java/{}/{}", base_package, app_name);
     let app_package = Path::new(&path);
     let app_package = root.join(app_package);
@@ -106,9 +214,39 @@ fn main() {
         .unwrap();
 
     navigation_entry_module.write(lines.join("\n").as_bytes()).unwrap();
+}
 
-    // ===== Amend buildsrc =====
+fn amend_app_build_gradle(handlebars: &mut Handlebars, context: &BTreeMap<String, String>, module: &String, is_test: bool, root: &Path) {
+    let app_build_gradle = root.join("app/build.gradle.kts");
+    if is_test {
+        create_dir_all(app_build_gradle.parent().unwrap()).unwrap();
+        let mock_file = File::create(&app_build_gradle).unwrap();
+        handlebars.render_template_to_write(MOCK_APP_BUILD_GRADLE, &context, &mock_file).unwrap();
+    }
 
+    let app_build_gradle_content = read_to_string(&app_build_gradle).unwrap();
+    let lines: Vec<String> = app_build_gradle_content.lines()
+        .fold(Vec::new(), |mut acc, line| {
+            let line = line.to_string();
+            acc.push(line.clone());
+            if line.contains("// ===== feature modules =====") {
+                let dependency_implementation = format!("    implementation(*{}.all())", module.to_case(Case::Camel));
+                acc.push(dependency_implementation)
+            }
+            acc
+        });
+
+    let mut app_build_gradle = OpenOptions::new()
+        .create(is_test)
+        .write(true)
+        .truncate(true)
+        .open(app_build_gradle)
+        .unwrap();
+
+    app_build_gradle.write(lines.join("\n").as_bytes()).unwrap();
+}
+
+fn amend_build_src(handlebars: &mut Handlebars, context: &BTreeMap<String, String>, is_test: bool, root: &Path) {
     let path = format!("buildSrc/src/main/kotlin/");
     let build_src_root = Path::new(&path);
     let build_src_root = root.join(build_src_root);
@@ -140,35 +278,6 @@ fn main() {
         .unwrap();
 
     build_src_modules.write(lines.join("\n").as_bytes()).unwrap();
-
-    // Amend app build gradle
-    let app_build_gradle = root.join("app/build.gradle.kts");
-    if is_test {
-        create_dir_all(app_build_gradle.parent().unwrap()).unwrap();
-        let mock_file = File::create(&app_build_gradle).unwrap();
-        handlebars.render_template_to_write(MOCK_APP_BUILD_GRADLE, &context, &mock_file).unwrap();
-    }
-
-    let app_build_gradle_content = read_to_string(&app_build_gradle).unwrap();
-    let lines: Vec<String> = app_build_gradle_content.lines()
-        .fold(Vec::new(), |mut acc, line| {
-            let line = line.to_string();
-            acc.push(line.clone());
-            if line.contains("// ===== feature modules =====") {
-                let dependency_implementation = format!("    implementation(*{}.all())", module.to_case(Case::Camel));
-                acc.push(dependency_implementation)
-            }
-            acc
-        });
-
-    let mut app_build_gradle = OpenOptions::new()
-        .create(is_test)
-        .write(true)
-        .truncate(true)
-        .open(app_build_gradle)
-        .unwrap();
-
-    app_build_gradle.write(lines.join("\n").as_bytes()).unwrap();
 }
 
 fn add_import_and_include_to_navigation_entry_module(module: &String, dotted_base_package: String, navigation_entry_module_content: String) -> Vec<String> {
@@ -237,7 +346,7 @@ fn generate_impl_files<T: Serialize>(
 
     generate_impl_di(base_impl_package, handlebars, data, module);
     generate_impl_entry(base_impl_package, handlebars, data, module);
-    generate_first_page(base_impl_package, handlebars, data, first_page);
+    generate_page(base_impl_package, handlebars, data, first_page);
 }
 
 fn generate_impl_di<T: Serialize>(base_impl_package: &Path, handlebars: &Handlebars, data: &T, module: &str) {
@@ -264,7 +373,7 @@ fn generate_impl_entry<T: Serialize>(base_impl_package: &Path, handlebars: &Hand
     generate_file(&entry_package, handlebars, data, &file_name, FEATURE_ENTRY_IMPL);
 }
 
-fn generate_first_page<T: Serialize>(base_impl_package: &Path, handlebars: &Handlebars, data: &T, first_page: &str) {
+fn generate_page<T: Serialize>(base_impl_package: &Path, handlebars: &Handlebars, data: &T, first_page: &str) {
     let first_page_package = first_page.to_string();
     let first_page_package = base_impl_package.join(first_page_package.to_case(Case::Flat));
     let first_page_package = first_page_package.as_path();
@@ -304,26 +413,20 @@ fn generate_file<T: Serialize>(parent: &Path, handlebars: &Handlebars, data: &T,
     handlebars.render_template_to_write(template_content, data, file).unwrap();
 }
 
-fn parse_parameters() -> BTreeMap<String, String> {
+fn build_context(args: &Cli) -> BTreeMap<String, String> {
     let mut data = BTreeMap::new();
-
-    let args: Vec<String> = env::args().collect();
-
-    let base_package = &args[1];
-    let first_page = &args[3];
-    let module_name = &args[2];
-    let app_name = &args[4];
-    let test_option = if args.len() == 6 {
-        Some(&args[5])
-    } else {
-        None
-    };
-
-    data.insert("module".to_string(), module_name.to_string());
-    data.insert("base_package".to_string(), base_package.to_string());
-    data.insert("first_page".to_string(), first_page.to_string());
-    data.insert("app".to_string(), app_name.to_string());
-    data.insert("test_option".to_string(), test_option.unwrap_or(&"test=false".to_string()).to_string());
+    data.insert("base_package".to_string(), args.base_package.clone());
+    data.insert("app".to_string(), args.app_name.clone());
+    match &args.command {
+        Commands::GenMod { feature, start_screen } => {
+            data.insert("module".to_string(), feature.clone());
+            data.insert("first_page".to_string(), start_screen.clone());
+        }
+        Commands::GenScreen { feature, screen } => {
+            data.insert("module".to_string(), feature.clone());
+            data.insert("first_page".to_string(), screen.clone());
+        }
+    }
     data
 }
 

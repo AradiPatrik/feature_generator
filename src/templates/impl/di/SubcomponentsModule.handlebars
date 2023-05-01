@@ -6,5 +6,9 @@ import dagger.Module
 /**
  * Add subfeature-components here
  */
-@Module(subcomponents = [{{ pascal first_page }}Subcomponent::class])
+@Module(
+    subcomponents = [
+        {{ pascal first_page }}Subcomponent::class,
+    ]
+)
 interface {{ pascal module }}SubcomponentsModule
