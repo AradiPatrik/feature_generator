@@ -10,3 +10,5 @@ handlebars = "4.3.6"
 convert_case = "0.6.0"
 serde = "1.0.160"
 clap = { version = "4.2.5", features = ["derive"] }
+home = "0.5.5"
+config = "0.13.1"

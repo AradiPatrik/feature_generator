@@ -6,7 +6,7 @@ use std::path::Path;
 use convert_case::{Case, Casing};
 use serde::Serialize;
 use handlebars::{Handlebars};
-use crate::args_parser::{Cli, Commands};
+use crate::args_parser::{Cli, Commands, get_global_config_path, get_local_config_path};
 
 mod helpers;
 mod args_parser;
@@ -56,14 +56,42 @@ fn main() {
         Commands::GenScreen { .. } => {
             gen_screen(&mut handlebars, &args);
         }
+        Commands::Config { global, ref app_name, ref base_package } => {
+            gen_config(&args, global, app_name, base_package);
+        }
     }
+}
+
+fn gen_config(args: &Cli, global: bool, app_name: &Option<String>, base_package: &Option<String>) {
+    let config_path = if global {
+        get_global_config_path()
+    } else {
+        get_local_config_path()
+    };
+    create_dir_all(config_path.parent().unwrap()).unwrap();
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(config_path)
+        .unwrap();
+
+    let mut lines = Vec::new();
+    if let Some(package) = base_package.as_ref().or(args.base_package.as_ref()) {
+        lines.push(format!("base-package = \"{}\"", package));
+    }
+    if let Some(name) = app_name.as_ref().or(args.app_name.as_ref()) {
+        lines.push(format!("app-name = \"{}\"", name));
+    }
+
+    file.write_all(lines.join("\n").as_bytes()).unwrap();
 }
 
 fn gen_screen(handlebars: &mut Handlebars, args: &Cli) {
     let context = build_context(&args);
     let module = context.get("module").unwrap();
     let page: &String = context.get("first_page").unwrap();
-    let base_package = args.base_package.split(".").collect::<Vec<&str>>().join("/");
+    let base_package = args.base_package.as_ref().unwrap().split(".").collect::<Vec<&str>>().join("/");
     let root = Path::new(if args.debug { "./test/" } else { "./" });
     let feature = format!("feature/{}", module.to_case(Case::Kebab));
     let feature_root = root.join(&feature);
@@ -76,7 +104,7 @@ fn gen_screen(handlebars: &mut Handlebars, args: &Cli) {
         .join("impl");
 
     generate_page(&base_impl_package_path, handlebars, &context, page);
-    add_subcomponent_to_component(page, module, &base_impl_package_path, &args.base_package);
+    add_subcomponent_to_component(page, module, &base_impl_package_path, args.base_package.as_ref().unwrap());
 }
 
 fn add_subcomponent_to_component(screen_name: &str, module: &str, base_impl_package_path: &Path, base_package: &str) {
@@ -415,8 +443,8 @@ fn generate_file<T: Serialize>(parent: &Path, handlebars: &Handlebars, data: &T,
 
 fn build_context(args: &Cli) -> BTreeMap<String, String> {
     let mut data = BTreeMap::new();
-    data.insert("base_package".to_string(), args.base_package.clone());
-    data.insert("app".to_string(), args.app_name.clone());
+    data.insert("base_package".to_string(), args.base_package.as_ref().unwrap().clone());
+    data.insert("app".to_string(), args.app_name.as_ref().unwrap().clone());
     match &args.command {
         Commands::GenMod { feature, start_screen } => {
             data.insert("module".to_string(), feature.clone());
@@ -426,6 +454,7 @@ fn build_context(args: &Cli) -> BTreeMap<String, String> {
             data.insert("module".to_string(), feature.clone());
             data.insert("first_page".to_string(), screen.clone());
         }
+        _ => { panic!("Trying to build context for non generate command") }
     }
     data
 }
