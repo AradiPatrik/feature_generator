@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs::{create_dir_all, File, OpenOptions, read_to_string};
 use std::io::prelude::*;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use convert_case::{Case, Casing};
 use serde::Serialize;
@@ -17,8 +17,13 @@ const FEATURE_ROOT_COMPONENT: &str = include_str!("templates/impl/di/FeatureRoot
 const ROOT_MODULE: &str = include_str!("templates/impl/di/RootModule.handlebars");
 const SUBCOMPONENTS_MODULE: &str = include_str!("templates/impl/di/SubcomponentsModule.handlebars");
 
+// impl/directions
+const FEATURE_DIRECTIONS: &str = include_str!("templates/impl/directions/FeatureDirections.handlebars");
+const SUBFEATURE_DIRECTION_TEMPLATE: &str = include_str!("templates/impl/directions/SubfeatureDirectionTemplate.handlebars");
+
 // impl/entry
 const FEATURE_ENTRY_IMPL: &str = include_str!("templates/impl/entry/FeatureEntryImpl.handlebars");
+const SUBFEATURE_COMPOSABLE_TEMPLATE: &str = include_str!("templates/impl/entry/SubfeatureComposableTemplate.handlebars");
 
 // impl/firstpage
 const PAGE_MODULE: &str = include_str!("templates/impl/firstpage/di/FirstPageModule.handlebars");
@@ -105,6 +110,77 @@ fn gen_screen(handlebars: &mut Handlebars, args: &Cli) {
 
     generate_page(&base_impl_package_path, handlebars, &context, page);
     add_subcomponent_to_component(page, module, &base_impl_package_path, args.base_package.as_ref().unwrap());
+    amend_directions(handlebars, &context, module, &base_impl_package_path);
+    amend_feature_entry(handlebars, &context, module, &base_impl_package_path);
+}
+
+fn amend_feature_entry(handlebars: &mut Handlebars, context: &BTreeMap<String, String>, module: &String, base_impl_package_path: &PathBuf) {
+    let feature_entry_path = base_impl_package_path.join(format!("entry/{}FeatureEntryImpl.kt", module.to_case(Case::Pascal)));
+    let mut lines = read_to_string(&feature_entry_path).unwrap()
+        .lines()
+        .map(|l| l.to_string())
+        .collect::<Vec<String>>();
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.starts_with("        navigation"),
+        handlebars.render_template(SUBFEATURE_COMPOSABLE_TEMPLATE, &context).unwrap().as_str(),
+    );
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.ends_with("Screen") && l.starts_with("import"),
+        handlebars.render_template(
+            "import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen.{{ pascal first_page }}Screen",
+            &context).unwrap().as_str(),
+    );
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&feature_entry_path)
+        .unwrap();
+
+    file.write(lines.join("\n").as_bytes()).unwrap();
+}
+
+fn amend_directions(handlebars: &mut Handlebars, context: &BTreeMap<String, String>, module: &String, base_impl_package_path: &PathBuf) {
+    let directions_path = base_impl_package_path.join("directions").join(format!("{}Directions.kt", module.to_case(Case::Pascal)));
+    let mut lines = read_to_string(&directions_path).unwrap()
+        .lines()
+        .map(|l| l.to_string())
+        .collect::<Vec<String>>();
+
+
+    if lines.iter().find(|l| l.ends_with("EmptyInput")).is_none() {
+        add_line_after_matching_predicate(
+            &mut lines,
+            &|l| l.ends_with("NavigationCommandProvider"),
+            format!("import {}.navigation.EmptyInput", context.get("base_package").unwrap()).as_str(),
+        );
+    }
+
+    if lines.iter().find(|l| l.eq_ignore_ascii_case("import androidx.navigation.NamedNavArgument")).is_none() {
+        add_line_after_matching_predicate(
+            &mut lines,
+            &|l| l.contains("androidx.navigation."),
+            "import androidx.navigation.NamedNavArgument",
+        );
+    }
+
+    add_line_after_matching_predicate(
+        &mut lines,
+        &|l| l.starts_with("object"),
+        handlebars.render_template(SUBFEATURE_DIRECTION_TEMPLATE, &context).unwrap().as_str(),
+    );
+
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(&directions_path)
+        .unwrap();
+
+    file.write(lines.join("\n").as_bytes()).unwrap();
 }
 
 fn add_subcomponent_to_component(screen_name: &str, module: &str, base_impl_package_path: &Path, base_package: &str) {
@@ -374,7 +450,17 @@ fn generate_impl_files<T: Serialize>(
 
     generate_impl_di(base_impl_package, handlebars, data, module);
     generate_impl_entry(base_impl_package, handlebars, data, module);
+    generate_directions(base_impl_package, handlebars, data, module);
     generate_page(base_impl_package, handlebars, data, first_page);
+}
+
+fn generate_directions<T: Serialize>(base_impl_package: &Path, handlebars: &Handlebars, data: &T, module: &str) {
+    let directions_package = base_impl_package.join("directions");
+    let directions_package = directions_package.as_path();
+    create_dir_all(directions_package).unwrap();
+
+    let file_name = format!("{}Directions.kt", module.to_case(Case::Pascal));
+    generate_file(&directions_package, handlebars, data, &file_name, FEATURE_DIRECTIONS);
 }
 
 fn generate_impl_di<T: Serialize>(base_impl_package: &Path, handlebars: &Handlebars, data: &T, module: &str) {

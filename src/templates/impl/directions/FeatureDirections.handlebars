@@ -1,0 +1,12 @@
+package {{ base_package }}.{{ flat module }}.impl.directions
+
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
+import {{ base_package }}.navigation.EmptyInput
+import {{ base_package }}.navigation.NavigationCommand
+import {{ base_package }}.navigation.NavigationCommandProvider
+
+object {{ pascal module }}Directions {
+    object {{ pascal first_page }} : NavigationCommandProvider<EmptyInput> by {{ pascal module }}FeatureEntry
+}

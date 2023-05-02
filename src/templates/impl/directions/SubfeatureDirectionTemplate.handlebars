@@ -1,0 +1,10 @@
+    object {{ pascal first_page }} : NavigationCommandProvider<EmptyInput> {
+        override val featureRoute: String = "{{ kebab first_page }}/"
+        override val arguments = emptyList<NamedNavArgument>()
+
+        override fun destination(input: EmptyInput) = object : NavigationCommand {
+            override val arguments = {{ pascal first_page }}.arguments
+            override val destinationFeatureRoute = {{ pascal module }}FeatureEntry.featureRoute
+            override val destination: String = "{{ kebab first_page }}/"
+        }
+    }

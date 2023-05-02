@@ -6,12 +6,12 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import {{ base_package }}.data.api.DataProvider
 import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
 import {{ base_package }}.{{ flat module }}.impl.di.Dagger{{ pascal module }}RootComponent
 import {{ base_package }}.{{ flat module }}.impl.di.{{ pascal module }}RootComponent
+import {{ base_package }}.{{ flat module }}.impl.directions.{{ pascal module }}Directions
 import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen.{{ pascal first_page }}Screen
 import {{ base_package }}.navigation.CompositionLocals
 import {{ base_package }}.navigation.RootComponentHolder
@@ -19,6 +19,7 @@ import {{ base_package }}.navigation.injectedViewModel
 import {{ base_package }}.navigation.rememberScoped
 import {{ base_package }}.platform.PlatformProvider
 import {{ base_package }}.navigation.NavigationProvider
+import {{ base_package }}.navigation.composable
 import javax.inject.Inject
 
 /**
@@ -33,7 +34,7 @@ class {{ pascal module }}FeatureEntryImpl @Inject constructor() : {{ pascal modu
         navController: NavHostController,
     ) {
         navigation(startDestination = featureRoute, route = rootRoute) {
-            composable(featureRoute, arguments) { backstackEntry ->
+            composable({{ pascal module }}Directions.{{ pascal first_page }}) { backstackEntry ->
                 val rootComponent = rootComponent(backstackEntry, navController)
 
                 val viewModel = injectedViewModel(backstackEntry) {

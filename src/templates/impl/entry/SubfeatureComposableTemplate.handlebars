@@ -1,0 +1,9 @@
+            composable({{ pascal module }}Directions.{{ pascal first_page }}) { backstackEntry ->
+                val rootComponent = rootComponent(backstackEntry, navController)
+
+                val viewModel = injectedViewModel(backstackEntry) {
+                    rootComponent.{{ camel first_page }}SubcomponentFactory.create().viewModel
+                }
+
+                {{ pascal first_page }}Screen(viewModel = viewModel)
+            }
