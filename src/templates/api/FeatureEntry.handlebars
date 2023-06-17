@@ -5,20 +5,13 @@ import {{ base_package }}.navigation.EmptyInput
 import {{ base_package }}.navigation.FeatureEntry
 import {{ base_package }}.navigation.NavigationCommand
 import {{ base_package }}.navigation.NavigationCommandProvider
+import {{ base_package }}.navigation.createNavigationCommandProvider
 
 
 /**
  * Define arguments and start destination for the feature.
  */
 abstract class {{ pascal module }}FeatureEntry : FeatureEntry<EmptyInput> {
-    companion object : NavigationCommandProvider<EmptyInput> {
-        override val featureRoute: String = "{{ kebab module }}"
-        override val arguments = emptyList<NamedNavArgument>()
-
-        override fun destination(input: EmptyInput) = object : NavigationCommand {
-            override val arguments: List<NamedNavArgument> = this@Companion.arguments
-            override val destinationFeatureRoute: String = featureRoute
-            override val destination: String = featureRoute
-        }
-    }
+    companion object :
+        NavigationCommandProvider<EmptyInput> by createNavigationCommandProvider("{{ kebab module }}")
 }

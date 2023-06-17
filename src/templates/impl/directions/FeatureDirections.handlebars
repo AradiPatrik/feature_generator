@@ -6,6 +6,7 @@ import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
 import {{ base_package }}.navigation.EmptyInput
 import {{ base_package }}.navigation.NavigationCommand
 import {{ base_package }}.navigation.NavigationCommandProvider
+import {{ base_package }}.navigation.createNavigationCommandProvider
 
 object {{ pascal module }}Directions {
     object {{ pascal first_page }} : NavigationCommandProvider<EmptyInput> by {{ pascal module }}FeatureEntry

@@ -2,6 +2,7 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     kotlin("kapt")
+    id("com.google.devtools.ksp")
 
     `android-config`
 }
@@ -14,8 +15,11 @@ android {
 dependencies {
     applyFeatureCommon()
     implementation({{ camel module }}.api())
-    implementation(libs.compose, libs.coroutines, libs.paging)
+    implementation(libs.compose, libs.coroutines)
 
     implementation(libs.dagger)
     kapt(libs.daggerCompiler)
+
+    implementation(libs.moshi)
+    ksp(libs.moshiCompiler)
 }
