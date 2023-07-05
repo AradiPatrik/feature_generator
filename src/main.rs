@@ -123,7 +123,7 @@ fn amend_feature_entry(handlebars: &mut Handlebars, context: &BTreeMap<String, S
 
     add_line_after_matching_predicate(
         &mut lines,
-        &|l| l.starts_with("        navigation"),
+        &|l| l.starts_with("    override fun FeatureGraphBuilderScope.buildNavigation()"),
         handlebars.render_template(SUBFEATURE_COMPOSABLE_TEMPLATE, &context).unwrap().as_str(),
     );
 
@@ -131,7 +131,7 @@ fn amend_feature_entry(handlebars: &mut Handlebars, context: &BTreeMap<String, S
         &mut lines,
         &|l| l.ends_with("Screen") && l.starts_with("import"),
         handlebars.render_template(
-            "import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen.{{ pascal first_page }}Screen",
+            "import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen.{{ pascal first_page }}Screen\nimport {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.di.{{ pascal first_page }}Subcomponent",
             &context).unwrap().as_str(),
     );
 
@@ -355,7 +355,7 @@ fn amend_build_src(handlebars: &mut Handlebars, context: &BTreeMap<String, Strin
     let build_src_root = Path::new(&path);
     let build_src_root = root.join(build_src_root);
 
-    let build_src_modules = build_src_root.join("modules.kt");
+    let build_src_modules = build_src_root.join("app-modules.kt");
     if is_test {
         create_dir_all(build_src_modules.parent().unwrap()).unwrap();
         let mock_file = File::create(&build_src_modules).unwrap();

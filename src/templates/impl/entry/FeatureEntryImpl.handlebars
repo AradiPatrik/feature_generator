@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
-import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.navigation
 import {{ base_package }}.data.api.DataProvider
@@ -12,9 +11,13 @@ import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
 import {{ base_package }}.{{ flat module }}.impl.di.Dagger{{ pascal module }}RootComponent
 import {{ base_package }}.{{ flat module }}.impl.di.{{ pascal module }}RootComponent
 import {{ base_package }}.{{ flat module }}.impl.directions.{{ pascal module }}Directions
+import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.di.{{ pascal module }}Subcomponent
 import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen.{{ pascal first_page }}Screen
+import {{ base_package }}.navigation.BaseFeatureEntry
 import {{ base_package }}.navigation.CompositionLocals
-import {{ base_package }}.navigation.RootComponentHolder
+import {{ base_package }}.navigation.EmptyInput
+import {{ base_package }}.navigation.FeatureGraphBuilderScope
+import {{ base_package }}.navigation.ToDestinationCommand
 import {{ base_package }}.navigation.injectedViewModel
 import {{ base_package }}.navigation.rememberScoped
 import {{ base_package }}.platform.PlatformProvider
@@ -25,25 +28,17 @@ import javax.inject.Inject
 /**
  * The entry point for the feature. Provides root component and navigation graph for the feature.
  */
-class {{ pascal module }}FeatureEntryImpl @Inject constructor() : {{ pascal module }}FeatureEntry(),
-    RootComponentHolder<{{ pascal module }}RootComponent> {
-    override val rootRoute: String
-        get() = "@{{ kebab module }}"
-
-    override fun NavGraphBuilder.navigation(
-        navController: NavHostController,
-    ) {
-        navigation(startDestination = featureRoute, route = rootRoute) {
-            composable({{ pascal module }}Directions.{{ pascal first_page }}) { backstackEntry ->
-                val rootComponent = rootComponent(backstackEntry, navController)
-
-                val viewModel = injectedViewModel(backstackEntry) {
-                    rootComponent.{{ camel first_page }}SubcomponentFactory.create().viewModel
-                }
-
-                {{ pascal first_page }}Screen(viewModel = viewModel)
-            }
-        }
+class {{ pascal module }}FeatureEntryImpl @Inject constructor() : BaseFeatureEntry<EmptyInput, {{ pascal module }}RootComponent>(
+    rootRoute = "@{{ kebab module }}",
+    startRoute = {{ pascal module }}FeatureEntry.featureRoute
+), {{ pascal module }}FeatureEntry {
+    override fun FeatureGraphBuilderScope.buildNavigation() {
+        addNode(
+            direction = {{ pascal module }}Directions.{{ pascal first_page }},
+            subcomponentFactory = {{ pascal module }}RootComponent::{{ camel first_page }}SubcomponentFactory,
+            viewModelFactory = {{ pascal first_page }}Subcomponent::viewModelFactory,
+            content = { {{ pascal first_page }}Screen(it) }
+        )
     }
 
     @Composable

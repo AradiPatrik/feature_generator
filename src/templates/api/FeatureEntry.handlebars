@@ -5,13 +5,14 @@ import {{ base_package }}.navigation.EmptyInput
 import {{ base_package }}.navigation.FeatureEntry
 import {{ base_package }}.navigation.NavigationCommand
 import {{ base_package }}.navigation.NavigationCommandProvider
-import {{ base_package }}.navigation.createNavigationCommandProvider
+import {{ base_package }}.navigation.createNavDirection
+import {{ base_package }}.navigation.NavDirection
 
 
 /**
  * Define arguments and start destination for the feature.
  */
-abstract class {{ pascal module }}FeatureEntry : FeatureEntry<EmptyInput> {
+interface {{ pascal module }}FeatureEntry : FeatureEntry<EmptyInput> {
     companion object :
-        NavigationCommandProvider<EmptyInput> by createNavigationCommandProvider("{{ kebab module }}")
+        NavDirection<EmptyInput> by createNavDirection("{{ kebab module }}")
 }

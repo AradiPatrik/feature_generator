@@ -1,11 +1,12 @@
 package {{ base_package }}.{{ flat module }}.impl.di
 
+import androidx.navigation.NavController
 import {{ base_package }}.data.api.DataProvider
 import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}Provider
-import {{ base_package }}.navigation.NavigationProvider
 import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.di.{{ pascal first_page }}Subcomponent
 import {{ base_package }}.navigation.FeatureScoped
 import {{ base_package }}.platform.PlatformProvider
+import dagger.BindsInstance
 import dagger.Component
 
 /**
@@ -17,7 +18,6 @@ import dagger.Component
     dependencies = [
         DataProvider::class,
         PlatformProvider::class,
-        NavigationProvider::class,
     ],
     modules = [
         {{ pascal module }}RootModule::class,
@@ -26,4 +26,13 @@ import dagger.Component
 )
 interface {{ pascal module }}RootComponent : {{ pascal module }}Provider {
     val {{ camel first_page }}SubcomponentFactory: {{ pascal first_page }}Subcomponent.Factory
+
+    @Component.Factory
+    interface Factory {
+        fun create(
+            dataProvider: DataProvider,
+            platformProvider: PlatformProvider,
+            @BindsInstance navController: NavController,
+        ): {{ pascal module }}RootComponent
+    }
 }

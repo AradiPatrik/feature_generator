@@ -1,14 +1,25 @@
 package {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.screen
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import {{ base_package }}.navigation.AssistedViewModelFactory
 import {{ base_package }}.{{ flat module }}.impl.{{ flat first_page }}.usecase.DoExample
+import {{ base_package }}.navigation.EmptyInput
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 
-class {{ pascal first_page }}ScreenViewModel @Inject constructor(
+class {{ pascal first_page }}ScreenViewModel @AssistedInject constructor(
     private val doExample: DoExample,
+    @Assisted private val savedStateHandle: SavedStateHandle,
+    @Assisted private val input: EmptyInput,
 ) : ViewModel() {
+    @AssistedFactory
+    interface Factory : AssistedViewModelFactory<EmptyInput, {{ pascal first_page }}ScreenViewModel>
+
     fun onClick() = viewModelScope.launch {
         doExample("example")
     }
