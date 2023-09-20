@@ -6,7 +6,6 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.navigation
-import {{ base_package }}.data.api.DataProvider
 import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
 import {{ base_package }}.{{ flat module }}.impl.di.Dagger{{ pascal module }}RootComponent
 import {{ base_package }}.{{ flat module }}.impl.di.{{ pascal module }}RootComponent
@@ -47,15 +46,13 @@ class {{ pascal module }}FeatureEntryImpl @Inject constructor() : BaseFeatureEnt
         navController: NavController,
         arguments: Bundle?
     ): {{ pascal module }}RootComponent {
-        val currentDataProvider = CompositionLocals.current<DataProvider>()
         val currentPlatformProvider = CompositionLocals.current<PlatformProvider>()
-        val navigationProvider = CompositionLocals.current<NavigationProvider>()
         return rememberScoped(rootEntry) {
-            Dagger{{ pascal module }}RootComponent.builder()
-                .dataProvider(currentDataProvider)
-                .platformProvider(currentPlatformProvider)
-                .navigationProvider(navigationProvider)
-                .build()
+            Dagger{{ pascal module }}RootComponent.factory()
+                .create(
+                    platformProvider = currentPlatformProvider,
+                    navController = navController,
+                )
         }
     }
 }
