@@ -1,4 +1,4 @@
-package {{ base_package }}.{{ flat module }}.impl.subfeature.{{ flat first_page }}.screen
+package test.base.package.home.impl.subfeature.homedetails.screen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,22 +11,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import {{ base_package }}.theme.{{ pascal app }}Theme
+import test.base.package.theme.TestAppTheme
 
 @Composable
-fun {{ pascal first_page }}Screen(viewModel: {{ pascal first_page }}ScreenViewModel) {
-    {{ pascal first_page }}Screen()
+fun HomeDetailsScreen(viewModel: HomeDetailsScreenViewModel) {
+    HomeDetailsScreen()
 }
 
 @Composable
-fun {{ pascal first_page }}Screen() {
+fun HomeDetailsScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             Text(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(16.dp),
-                text = "{{ pascal first_page }} Screen",
+                text = "HomeDetails Screen",
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -35,8 +35,8 @@ fun {{ pascal first_page }}Screen() {
 
 @Composable
 @Preview(showBackground = true)
-fun {{ pascal first_page }}ScreenPreview() {
-    {{ pascal app }}Theme {
-        {{ pascal first_page }}Screen()
+fun HomeDetailsScreenPreview() {
+    TestAppTheme {
+        HomeDetailsScreen()
     }
 }

@@ -1,0 +1,24 @@
+package {{ base_package }}.{{ flat module }}.impl.subfeature.{{ flat first_page }}
+
+import androidx.compose.runtime.Composable
+import com.cardinalblue.navigation.EmptyInput
+import {{ base_package }}.{{ flat module }}.impl.subfeature.{{ flat first_page }}.screen.{{ pascal first_page }}Screen
+import {{ base_package }}.{{ flat module }}.impl.subfeature.{{ flat first_page }}.screen.{{ pascal first_page }}ScreenViewModel
+import com.cardinalblue.navigation.Subfeature
+import com.cardinalblue.skeleton.processor.DeclareSubfeature
+import dagger.Module
+
+@Module
+interface {{ pascal first_page }}SubfeatureModule
+
+@DeclareSubfeature(
+    route = "{{ kebab first_page }}",
+    input = EmptyInput::class,
+    subfeatureModule = {{ pascal first_page }}SubfeatureModule::class,
+)
+object {{ pascal first_page }}Subfeature : Subfeature<{{ pascal first_page }}ScreenViewModel> {
+    @Composable
+    override fun Screen(viewModel: {{ pascal first_page }}ScreenViewModel) {
+        {{ pascal first_page }}Screen(viewModel = viewModel)
+    }
+}

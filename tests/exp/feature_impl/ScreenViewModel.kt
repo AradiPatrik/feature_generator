@@ -1,4 +1,4 @@
-package {{ base_package }}.{{ flat module }}.impl.subfeature.{{ flat first_page }}.screen
+package test.base.package.home.impl.subfeature.home.screen
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -10,12 +10,12 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 
-class {{ pascal first_page }}ScreenViewModel @AssistedInject constructor(
+class HomeScreenViewModel @AssistedInject constructor(
     @Assisted private val savedStateHandle: SavedStateHandle,
     @Assisted private val input: EmptyInput,
 ) : ViewModel() {
     @AssistedFactory
-    interface Factory : AssistedViewModelFactory<EmptyInput, {{ pascal first_page }}ScreenViewModel>
+    interface Factory : AssistedViewModelFactory<EmptyInput, HomeScreenViewModel>
 
     fun onClick() = viewModelScope.launch {
         TODO()

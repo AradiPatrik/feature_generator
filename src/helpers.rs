@@ -1,5 +1,5 @@
-use handlebars::{Handlebars, RenderContext, Helper, Context, JsonRender, HelperResult, Output};
 use convert_case::{Case, Casing};
+use handlebars::{Context, Handlebars, Helper, HelperResult, JsonRender, Output, RenderContext};
 
 pub fn to_flat(
     h: &Helper,
@@ -10,7 +10,14 @@ pub fn to_flat(
 ) -> HelperResult {
     let param = h.param(0).unwrap();
 
-    out.write(param.value().render().to_string().to_case(Case::Flat).as_ref())?;
+    out.write(
+        param
+            .value()
+            .render()
+            .to_string()
+            .to_case(Case::Flat)
+            .as_ref(),
+    )?;
     Ok(())
 }
 
@@ -23,7 +30,14 @@ pub fn to_pascal(
 ) -> HelperResult {
     let param = h.param(0).unwrap();
 
-    out.write(param.value().render().to_string().to_case(Case::Pascal).as_ref())?;
+    out.write(
+        param
+            .value()
+            .render()
+            .to_string()
+            .to_case(Case::Pascal)
+            .as_ref(),
+    )?;
     Ok(())
 }
 
@@ -36,7 +50,14 @@ pub fn to_camel(
 ) -> HelperResult {
     let param = h.param(0).unwrap();
 
-    out.write(param.value().render().to_string().to_case(Case::Camel).as_ref())?;
+    out.write(
+        param
+            .value()
+            .render()
+            .to_string()
+            .to_case(Case::Camel)
+            .as_ref(),
+    )?;
     Ok(())
 }
 
@@ -49,6 +70,19 @@ pub fn to_kebab(
 ) -> HelperResult {
     let param = h.param(0).unwrap();
 
-    out.write(param.value().render().to_string().to_case(Case::Kebab).as_ref())?;
+    out.write(
+        param
+            .value()
+            .render()
+            .to_string()
+            .to_case(Case::Kebab)
+            .as_ref(),
+    )?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn todo() {}
 }

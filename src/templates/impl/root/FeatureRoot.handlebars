@@ -1,0 +1,20 @@
+package {{ base_package }}.{{ flat module }}.impl.root
+
+import {{ base_package }}.{{ flat module }}.api.{{ pascal module }}FeatureEntry
+import {{ base_package }}.{{ flat module }}.impl.subfeature.{{ flat module }}.{{ pascal module }}Subfeature
+import com.cardinalblue.platform.PlatformProvider
+import com.cardinalblue.skeleton.processor.FeatureRoot
+import dagger.Module
+
+@Module
+interface {{ pascal module }}RootModule
+
+@FeatureRoot(
+    dependencies = [
+        PlatformProvider::class,
+    ],
+    rootModule = {{ pascal module }}RootModule::class,
+    startSubfeature = {{ pascal module }}Subfeature::class,
+    featureEntry = {{ pascal module }}FeatureEntry::class,
+)
+interface {{ pascal module }}FeatureRoot

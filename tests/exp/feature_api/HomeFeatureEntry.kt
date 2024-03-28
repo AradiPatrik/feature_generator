@@ -1,4 +1,4 @@
-package {{ base_package }}.{{ flat module }}.api
+package test.base.package.home.api
 
 import com.cardinalblue.navigation.EmptyInput
 import com.cardinalblue.navigation.FeatureEntry
@@ -8,7 +8,7 @@ import com.cardinalblue.navigation.createNavDirection
 /**
  * Defines route and input for this feature
  */
-interface {{ pascal module }}FeatureEntry : FeatureEntry {
+interface HomeFeatureEntry : FeatureEntry {
     companion object :
-        NavDirection<EmptyInput> by createNavDirection("{{ kebab module }}")
+        NavDirection<EmptyInput> by createNavDirection("home")
 }

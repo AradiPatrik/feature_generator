@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "{{ base_package }}.{{ flat module }}.api"
+    namespace = "test.base.package.home.api"
     applyCompose()
 }
 

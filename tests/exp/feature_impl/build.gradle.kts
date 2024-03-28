@@ -7,13 +7,17 @@ plugins {
 }
 
 android {
-    namespace = "{{ base_package }}.{{ flat module }}.api"
+    namespace = "test.base.package.home.impl"
     applyCompose()
 }
 
 dependencies {
-    implementation(navigation())
-    implementation(libs.compose)
+    applyFeatureCommon()
+    implementation(home.api())
+    implementation(libs.compose, libs.coroutines)
+
+    implementation(libs.dagger)
+    ksp(libs.daggerCompiler)
 
     implementation(libs.moshi)
     ksp(libs.moshiCompiler)
