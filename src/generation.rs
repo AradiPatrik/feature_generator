@@ -377,6 +377,7 @@ impl<'a> Generator<'a> {
             .join("api/src/main/kotlin")
             .join(&library.app_context.base_package_path_part())
             .join(library.app_context.app_name.to_case(Case::Flat))
+            .join(library.library_name.to_case(Case::Flat))
             .into()
     }
 

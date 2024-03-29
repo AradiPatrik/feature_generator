@@ -210,14 +210,14 @@ fn generate_library() {
 
     assert_content_eq(
         Path::new(
-            "library/face-detection/api/src/main/kotlin/test/base/package/myapp/FaceDetectionProvider.kt",
+            "library/face-detection/api/src/main/kotlin/test/base/package/myapp/facedetection/FaceDetectionProvider.kt",
         ),
         include_str!("./exp/lib/Provider.kt"),
     );
 
     assert_content_eq(
         Path::new(
-            "library/face-detection/api/src/main/kotlin/test/base/package/myapp/GetExample.kt",
+            "library/face-detection/api/src/main/kotlin/test/base/package/myapp/facedetection/GetExample.kt",
         ),
         include_str!("./exp/lib/GetExample.kt"),
     );
