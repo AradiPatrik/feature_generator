@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    process::exit,
+};
 
 use convert_case::{Case, Casing};
 
@@ -34,6 +37,14 @@ impl AppGenCtx {
             AppGenCtx::Feature(FeatureGenCtx::Root(feature)) => &feature.app_context,
             AppGenCtx::Feature(FeatureGenCtx::Subfeature(subfeature)) => &subfeature.app_context,
             AppGenCtx::Library(library) => &library.app_context,
+        }
+    }
+
+    pub fn module_name(&self) -> &str {
+        match self {
+            AppGenCtx::Feature(FeatureGenCtx::Root(feature)) => &feature.feature_name,
+            AppGenCtx::Feature(FeatureGenCtx::Subfeature(subfeature)) => &subfeature.feature_name,
+            AppGenCtx::Library(library) => &library.library_name,
         }
     }
 }
@@ -210,6 +221,7 @@ impl GenCtx {
         };
 
         match cli.command {
+            Command::GenerateCompletion { shell: _ } => exit(-1),
             Command::GenFeat { feature } => {
                 let feature = Feature {
                     app_context,
@@ -224,6 +236,13 @@ impl GenCtx {
                     subfeature_name: screen,
                 };
                 Ok(GenCtx::from(subfeature))
+            }
+            Command::GenLib { lib } => {
+                let library = Library {
+                    app_context,
+                    library_name: lib,
+                };
+                Ok(GenCtx::from(library))
             }
             Command::Config {
                 global,

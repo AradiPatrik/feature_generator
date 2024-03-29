@@ -17,7 +17,9 @@ class AppViewModel @Inject constructor() : ViewModel() {
 }
 
 @Scaffold(
-    libraries = [Platform::class],
+    libraries = [
+        Platform::class
+    ],
     features = [
         HomeFeatureRoot::class,
         StartFeatureRoot::class,

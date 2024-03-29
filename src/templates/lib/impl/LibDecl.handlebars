@@ -1,0 +1,12 @@
+package {{ flat base_package }}.{{ flat module }}.impl
+
+import {{ flat base_package }}.{{ flat module }}.api.{{ pascal module }}Provider
+import com.cardinalblue.platform.PlatformProvider
+import com.cardinalblue.skeleton.processor.DeclareLibrary
+
+@DeclareLibrary(
+    dependencies = [
+        PlatformProvider::class,
+    ],
+)
+interface {{ pascal module }} : {{ pascal module }}Provider

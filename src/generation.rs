@@ -4,6 +4,7 @@ use crate::args_parser;
 use crate::{args_parser::Cli, helpers};
 use convert_case::Case;
 use convert_case::Casing;
+use either::Either;
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 
@@ -32,6 +33,13 @@ const PAGE_SCREEN: &str =
     include_str!("templates/impl/firstpage/screen/FirstPageScreen.handlebars");
 const PAGE_VIEW_MODEL: &str =
     include_str!("templates/impl/firstpage/screen/FirstPageViewModel.handlebars");
+const LIB_API_BUILD: &str = include_str!("./templates/lib/api/LibApiBuild.handlebars");
+const LIB_PROVIDER: &str = include_str!("./templates/lib/api/Provider.handlebars");
+const GET_EXAMPLE: &str = include_str!("./templates/lib/api/GetExample.handlebars");
+const LIB_IMPL_BUILD: &str = include_str!("./templates/lib/impl/build.gradle.kts.handlebars");
+const LIB_DECL: &str = include_str!("./templates/lib/impl/LibDecl.handlebars");
+const GET_EXAMPLE_USE_CASE: &str =
+    include_str!("./templates/lib/impl/GetExampleUseCase.kt.handlebars");
 
 pub fn register_helpers(handlebars: &mut Handlebars) {
     handlebars.register_helper("flat", Box::new(helpers::to_flat));
@@ -52,8 +60,8 @@ impl HandlebarsContext {
     pub fn new(generation_context: &GenCtx) -> Self {
         let base_package = generation_context.app_ctx().map(|ctx| &ctx.base_package);
         let app = generation_context.app_ctx().map(|ctx| &ctx.app_name);
-        let module = if let GenCtx::App(AppGenCtx::Feature(feature)) = generation_context {
-            Some(feature.feature_name().to_string())
+        let module = if let GenCtx::App(app_gen_ctx) = generation_context {
+            Some(app_gen_ctx.module_name().to_string())
         } else {
             None
         };
@@ -178,55 +186,73 @@ impl<'a> Generator<'a> {
             subfeature_name: feature.feature_name.clone(),
         });
 
-        let application_class = self
-            .application_root(&feature.app_context)
-            .join("Application.kt");
+        self.amend_existing_files(Either::Left(feature));
+    }
 
-        append_line_below(
-            &application_class,
-            "features =",
-            &format!(
-                "        {}FeatureRoot::class,",
-                feature.feature_name.to_case(Case::Pascal)
+    fn amend_existing_files(&self, feat_or_lib: Either<&Feature, &Library>) {
+        let (app_ctx, scaffold_line, scaffold_decl, import, name, mod_type) = match feat_or_lib {
+            Either::Left(feature) => (
+                &feature.app_context,
+                "features =",
+                format!(
+                    "        {}FeatureRoot::class,",
+                    feature.feature_name.to_case(Case::Pascal)
+                ),
+                format!(
+                    "import {}.{}.impl.root.{}FeatureRoot",
+                    feature.app_context.base_package,
+                    feature.feature_name.to_case(Case::Flat),
+                    feature.feature_name.to_case(Case::Pascal),
+                ),
+                &feature.feature_name,
+                "feature",
             ),
-        );
+            Either::Right(library) => (
+                &library.app_context,
+                "libraries =",
+                format!(
+                    "        {}::class,",
+                    library.library_name.to_case(Case::Pascal)
+                ),
+                format!(
+                    "import {}.{}.impl.{}",
+                    library.app_context.base_package,
+                    library.library_name.to_case(Case::Flat),
+                    library.library_name.to_case(Case::Pascal),
+                ),
+                &library.library_name,
+                "library",
+            ),
+        };
 
-        append_line_below(
-            &application_class,
-            "import ",
-            &format!(
-                "import {}.{}.impl.root.{}FeatureRoot",
-                feature.app_context.base_package,
-                feature.feature_name.to_case(Case::Flat),
-                feature.feature_name.to_case(Case::Pascal),
-            ),
-        );
+        let application_class = self.application_root(app_ctx).join("Application.kt");
+
+        append_line_below(&application_class, scaffold_line, &scaffold_decl);
+
+        append_line_below(&application_class, "import ", &import);
 
         add_line_to_file(
             Path::new("settings.gradle.kts"),
             &format!(
-                "include(\":feature:{}:api\")\ninclude(\":feature:{}:impl\")",
-                &feature.feature_name.to_case(Case::Kebab),
-                &feature.feature_name.to_case(Case::Kebab)
+                "include(\":{0}:{1}:api\")\ninclude(\":{0}:{1}:impl\")",
+                mod_type, name
             ),
         );
 
         add_line_to_file(
             &Self::build_src_path().join("app-modules.kt"),
             &format!(
-                "val DependencyHandlerScope.{} get() = createProject(\":feature:{}\")",
-                &feature.feature_name.to_case(Case::Camel),
-                &feature.feature_name.to_case(Case::Kebab)
+                "val DependencyHandlerScope.{1} get() = createProject(\":{0}:{2}\")",
+                mod_type,
+                name.to_case(Case::Camel),
+                name.to_case(Case::Kebab)
             ),
         );
 
         append_line_below(
             Path::new("app/build.gradle.kts"),
             "dependencies",
-            &format!(
-                "    implementation(*{}.all())",
-                &feature.feature_name.to_case(Case::Camel)
-            ),
+            &format!("    implementation(*{}.all())", name.to_case(Case::Camel)),
         );
     }
 
@@ -303,8 +329,65 @@ impl<'a> Generator<'a> {
         );
     }
 
-    fn generate_library(&self, _library: &Library) {
-        todo!()
+    fn generate_library(&self, library: &Library) {
+        self.generate_file(
+            &Path::new("library").join(&library.library_name).join("api"),
+            "build.gradle.kts",
+            LIB_API_BUILD,
+        );
+
+        self.generate_file(
+            &self.library_api_base_package_path(library),
+            &format!("{}Provider.kt", library.library_name.to_case(Case::Pascal)),
+            LIB_PROVIDER,
+        );
+
+        self.generate_file(
+            &self.library_api_base_package_path(library),
+            "GetExample.kt",
+            GET_EXAMPLE,
+        );
+
+        self.generate_file(
+            &Path::new("library")
+                .join(&library.library_name)
+                .join("impl"),
+            "build.gradle.kts",
+            LIB_IMPL_BUILD,
+        );
+
+        self.generate_file(
+            &self.library_impl_base_package_path(library),
+            &format!("{}.kt", &library.library_name.to_case(Case::Pascal)),
+            LIB_DECL,
+        );
+
+        self.generate_file(
+            &self.library_impl_base_package_path(library).join("usecase"),
+            "GetExampleUseCase.kt",
+            GET_EXAMPLE_USE_CASE,
+        );
+
+        self.amend_existing_files(Either::Right(library));
+    }
+
+    fn library_api_base_package_path(&self, library: &Library) -> Box<Path> {
+        Path::new("library")
+            .join(&library.library_name)
+            .join("api/src/main/kotlin")
+            .join(&library.app_context.base_package_path_part())
+            .join(library.app_context.app_name.to_case(Case::Flat))
+            .into()
+    }
+
+    fn library_impl_base_package_path(&self, library: &Library) -> Box<Path> {
+        Path::new("library")
+            .join(&library.library_name)
+            .join("impl/src/main/kotlin")
+            .join(&library.app_context.base_package_path_part())
+            .join(library.library_name.to_case(Case::Flat))
+            .join("impl")
+            .into()
     }
 
     fn generate_config(&self, config: &Config) {

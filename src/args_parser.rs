@@ -1,7 +1,11 @@
-use clap::{Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
+use clap_complete::{generate, Shell};
 use config::{Config, File};
 use home::home_dir;
-use std::path::{Path, PathBuf};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 #[derive(Parser, Clone)]
 #[command(name = "Feature Generator")]
@@ -30,7 +34,7 @@ pub enum Command {
     /// Generates new feature module
     GenFeat {
         /// The name of the new feature
-        #[arg(short, long)]
+        #[arg()]
         feature: String,
     },
     /// Generates new sub-feature for a feature module
@@ -42,6 +46,11 @@ pub enum Command {
         /// The name of the new screen
         #[arg(short, long)]
         screen: String,
+    },
+    /// Generates new library
+    GenLib {
+        #[arg()]
+        lib: String,
     },
     /// Adds local or global configuration
     Config {
@@ -57,10 +66,26 @@ pub enum Command {
         #[arg(short, long)]
         app_name: Option<String>,
     },
+    GenerateCompletion {
+        #[arg(short, long, value_enum)]
+        shell: Shell,
+    },
 }
 
-pub fn parse_args() -> Cli {
+pub fn parse_args() -> Option<Cli> {
     let mut args = Cli::parse();
+    if let Cli {
+        command: Command::GenerateCompletion { shell },
+        debug: _,
+        base_package: _,
+        app_name: _,
+    } = args
+    {
+        let mut cmd = Cli::command();
+        let name = cmd.get_name().to_string();
+        generate(shell, &mut cmd, name, &mut io::stdout());
+        return None;
+    }
     let config = Config::builder()
         .add_source(
             File::from(get_global_config_path())
@@ -97,7 +122,7 @@ pub fn parse_args() -> Cli {
         );
     }
 
-    args
+    Some(args)
 }
 
 pub fn get_global_config_path() -> PathBuf {

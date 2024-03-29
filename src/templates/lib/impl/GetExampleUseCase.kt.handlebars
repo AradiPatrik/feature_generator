@@ -1,0 +1,21 @@
+package {{ flat base_package }}.{{ flat module }}.impl.usecase
+
+import android.content.Context
+import {{ flat base_package }}.{{ flat module }}.api.GetExample
+import {{ flat base_package }}.{{ flat module }}.impl.FaceDetection
+import com.cardinalblue.platform.ApplicationContext
+import com.cardinalblue.platform.IoDispatcher
+import com.cardinalblue.skeleton.processor.InLibrary
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+
+@InLibrary(ImageManipulation::class)
+class GetExampleUseCase @Inject constructor(
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    @ApplicationContext private val context: Context
+) : GetExample {
+    override suspend fun invoke() = withContext(ioDispatcher) {
+        TODO("Implement this")
+    }
+}
